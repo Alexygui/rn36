@@ -6,28 +6,57 @@
 
 import React, {Component} from 'react';
 import {
-    AppRegistry, Navigator,
+    AppRegistry, ListView, Navigator,
     StyleSheet,
     Text, TextInput, TouchableHighlight,
-
-    View
+    Dimensions,
+    View, Image
 } from 'react-native';
 import MyScene from "./android/test/MyScene";
 import styles from './android/test/styles';
 import Son from './android/test/Son';
+import Mock from './node_modules/mockjs/src/mock';
+
 
 export default class rn36 extends Component {
+    constructor(props) {
+        super(props);
+        const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+        const width = Dimensions.get('window').width;
+        this.state = {
+            dataSource: ds,
+            dataList: [],
+            width: width
+        };
+    }
+
+    componentDidMount() {
+        let _this = this;
+        fetch('http://rapapi.org/mockjs/19395/api/creation?page=1&accessToken=1')
+            .then((response) => response.json())
+            .then((responseJson) => {
+                const data = Mock.mock(responseJson);
+                console.log(JSON.stringify(data, null, 2));
+                if (data.data.length > 0) {
+                    let dataList = this.state.dataList.concat(data.data);
+                    _this.setState({
+                        dataSource: _this.state.dataSource.cloneWithRows(dataList),
+                        dataList: dataList
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    }
+
     censor(censor) {
         let i = 0;
-
         return function (key, value) {
             if (i !== 0 && typeof(censor) === 'object' && typeof(value) === 'object' && censor === value) return '[Circular]';
-            // if(typeof value === 'function') return '[Function]';
             if (i >= 30) // seems to be a harded maximum of 30 serialized objects?
                 return '[Unknown]';
-
             ++i; // so we know we aren't using the original object anymore
-            // console.log('i: ' + i);
             return value;
         }
     }
@@ -58,19 +87,60 @@ export default class rn36 extends Component {
     //         />
     //     );
     // }
+    // render() {
+    //     return (
+    //         <Navigator
+    //             initialRoute={{
+    //                 component: MyScene,
+    //                 title: 'My Initial Scene',
+    //                 index: 0
+    //             }}
+    //             renderScene={(route, navigator) => {
+    //                 let Component = route.component;
+    //                 return <Component {...route} navigator={navigator}/>
+    //             }}
+    //         />
+    //     );
+    // }
+
+    //列表
+    // render() {
+    //     return (
+    //         <View style={{flex: 1, paddingTop: 22, alignItems: 'center'}}>
+    //             <ListView
+    //                 dataSource={this.state.dataSource}
+    //                 renderRow={(rowData) => <Text style={{
+    //                     fontSize: 20,
+    //                     padding: 10,
+    //                     textAlign: 'center',
+    //                     width: Dimensions.get('window').width
+    //                 }}>{rowData}</Text>}
+    //             />
+    //         </View>
+    //     );
+    // }
+
+    //列表2
     render() {
         return (
-            <Navigator
-                initialRoute={{
-                    component: MyScene,
-                    title: 'My Initial Scene',
-                    index: 0
-                }}
-                renderScene={(route, navigator) => {
-                    let Component = route.component;
-                    return <Component {...route} navigator={navigator}/>
-                }}
-            />
+            <View style={{flex: 1, paddingTop: 22, alignItems: 'center'}}>
+                <ListView
+                    dataSource={this.state.dataSource}
+                    renderRow={(rowData) => <View>
+                        <Text style={{
+                            fontSize: 20,
+                            padding: 10,
+                            textAlign: 'left',
+                            width: this.state.width
+                        }}>{rowData.title}
+                        </Text>
+                        <Image
+                            style={{width: this.state.width, height: 200}}
+                            source={{uri: rowData.thumb}}
+                        />
+                    </View>}
+                />
+            </View>
         );
     }
 }
